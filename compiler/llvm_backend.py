@@ -115,7 +115,30 @@ class LLVMBackend(Backend):
         pass
 
     def WhileStmt(self, node: WhileStmt):
-        pass
+        if self.builder is None:
+            raise Exception("No builder is active")
+
+        bb_condition = self.main_func.append_basic_block(
+            self.module.get_unique_name("while_condition"))
+        bb_body = self.main_func.append_basic_block(
+            self.module.get_unique_name("while_body"))
+        bb_exit = self.main_func.append_basic_block(
+            self.module.get_unique_name("while_exit"))
+
+        self.builder.branch(bb_condition)
+
+        with self.builder.goto_block(bb_condition):
+            condition = self.visit(node.condition)  # llvm value stored in condition
+            # condition if true go to bb_body else bb_exit
+            self.builder.cbranch(condition, bb_body, bb_exit)
+
+        # go through every stmt in the body, generate llvm ir code for each
+        with self.builder.goto_block(bb_body):
+            for stmt in node.body:
+                self.visit(stmt)
+            self.builder.branch(bb_condition)
+
+        self.builder.position_at_end(bb_exit)
 
     def BinaryExpr(self, node: BinaryExpr) -> Optional[ICMPInstr]:
         pass
