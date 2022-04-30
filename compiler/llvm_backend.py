@@ -1,3 +1,4 @@
+from tkinter import Variable
 from typing import Dict, List, Optional
 
 from llvmlite import binding, ir
@@ -106,10 +107,18 @@ class LLVMBackend(Backend):
     ##################################
 
     def VarDef(self, node: VarDef):
-        pass
+        if self.builder is None:
+            raise Exception("No builder is active")
+        typ = self.visit(node.var)["type"]
+        var = self.visit(node.var)["name"]
+        value = self.visit(node.value)
+        alloca = self._create_alloca(var, typ)
+        self.builder.store(value, alloca)
+        self.func_symtab[-1][var] = alloca
 
     def AssignStmt(self, node: AssignStmt):
-        pass
+        if self.builder is None:
+            raise Exception("No builder is active")
 
     def IfStmt(self, node: IfStmt):
         pass
