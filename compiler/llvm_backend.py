@@ -117,18 +117,17 @@ class LLVMBackend(Backend):
         self.func_symtab[-1][var] = alloca
 
     def AssignStmt(self, node: AssignStmt):
-        # if self.builder is None:
-        #     raise Exception("No builder is active")
-        # if((len(node.targets) == 1)):
-        #     target = self.visit(node.targets[0])
-        #     print(target)
-        #     value = self.visit(node.value)
-        #     self.builder.store(value, target)
-        # else:
-        #     for target in node.targets:
-        #         value = self.visit(node.value)
-        #         self.builder.store(value, self.visit(target))
-        pass
+        if self.builder is None:
+            raise Exception("No builder is active")
+        value = self.visit(node.value)
+        # print(value)
+        if((len(node.targets) == 1)):
+            target = node.targets[0]  # object of type identifier
+            name = target.name
+            address = self._get_var_addr(name)
+            self.builder.store(value, address)
+        else:
+            pass
 
     def IfStmt(self, node: IfStmt):
         pass
