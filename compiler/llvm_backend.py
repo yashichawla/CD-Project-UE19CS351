@@ -127,7 +127,10 @@ class LLVMBackend(Backend):
             address = self._get_var_addr(name)
             self.builder.store(value, address)
         else:
-            pass
+            for target in node.targets:
+                name = target.name
+                address = self._get_var_addr(name)
+                self.builder.store(value, address)
 
     def IfStmt(self, node: IfStmt):
         pass
