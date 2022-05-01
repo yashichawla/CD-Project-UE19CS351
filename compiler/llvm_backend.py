@@ -120,7 +120,6 @@ class LLVMBackend(Backend):
         if self.builder is None:
             raise Exception("No builder is active")
         value = self.visit(node.value)
-        # print(value)
         if((len(node.targets) == 1)):
             target = node.targets[0]  # object of type identifier
             name = target.name
