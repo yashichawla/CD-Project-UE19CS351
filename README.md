@@ -3,7 +3,7 @@ TO-DO
 - [x] VarDef -> done, tested
 - [ ] AssignStmt -> done, not completely tested
 - [ ] IfStmt
-- [ ] WhileStmt
+- [x] WhileStmt ->added from video
 - [ ] BinaryExpr
 - [ ] Identifier ->done, tested with variables, not functions
 - [ ] IfExpr
