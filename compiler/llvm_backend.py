@@ -109,22 +109,28 @@ class LLVMBackend(Backend):
     def VarDef(self, node: VarDef):
         if self.builder is None:
             raise Exception("No builder is active")
+
         typ = self.visit(node.var)["type"]
         var = self.visit(node.var)["name"]
         value = self.visit(node.value)
+
         alloca = self._create_alloca(var, typ)
+
         self.builder.store(value, alloca)
         self.func_symtab[-1][var] = alloca
 
     def AssignStmt(self, node: AssignStmt):
         if self.builder is None:
             raise Exception("No builder is active")
+
         value = self.visit(node.value)
+
         if((len(node.targets) == 1)):
             target = node.targets[0]  # object of type identifier
             name = target.name
             address = self._get_var_addr(name)
             self.builder.store(value, address)
+
         else:
             for target in node.targets:
                 name = target.name
@@ -132,7 +138,39 @@ class LLVMBackend(Backend):
                 self.builder.store(value, address)
 
     def IfStmt(self, node: IfStmt):
-        pass
+        if self.builder is None:
+            raise Exception("No builder is active")
+
+        bb_condition = self.builder.append_basic_block(
+            self.module.get_unique_name("if_cond"))
+
+        bb_then = self.builder.append_basic_block(
+            self.module.get_unique_name("if_then"))
+
+        bb_else = self.builder.append_basic_block(self.module.get_unique_name(
+            "if_else")) if node.elseBody is not None else None
+
+        bb_exit = self.builder.append_basic_block(
+            self.module.get_unique_name("if_exit"))
+
+        self.builder.branch(bb_condition)
+
+        with self.builder.goto_block(bb_condition):
+            cond = self.visit(node.condition)
+            # condition if true go to bb_then else bb_else
+            self.builder.cbranch(cond, bb_then, bb_else)
+
+        with self.builder.goto_block(bb_then):  # build all stmts in then body
+            for stmt in node.thenBody:
+                self.visit(stmt)
+            self.builder.branch(bb_exit)
+
+        with self.builder.goto_block(bb_else):  # build all stmts in else body
+            for stmt in node.elseBody:
+                self.visit(stmt)
+            self.builder.branch(bb_exit)
+
+        self.builder.position_at_end(bb_exit)
 
     def WhileStmt(self, node: WhileStmt):
         if self.builder is None:
@@ -169,26 +207,37 @@ class LLVMBackend(Backend):
 
         if node.operator == "+":
             return self.builder.add(left, right)
+
         elif node.operator == "-":
             return self.builder.sub(left, right)
+
         elif node.operator == "*":
             return self.builder.mul(left, right)
+
         elif node.operator == "%":
             return self.builder.srem(left, right)
+
         elif node.operator == "and":
             return self.builder.and_(left, right)
+
         elif node.operator == "or":
             return self.builder.or_(left, right)
+
         elif node.operator == "<":
             return self.builder.icmp_signed("<", left, right)
+
         elif node.operator == ">":
             return self.builder.icmp_signed(">", left, right)
+
         elif node.operator == ">=":
             return self.builder.icmp_signed(">=", left, right)
+
         elif node.operator == "<=":
             return self.builder.icmp_signed("<=", left, right)
+
         elif node.operator == "==":
             return self.builder.icmp_signed("==", left, right)
+
         elif node.operator == "!=":
             return self.builder.icmp_signed("!=", left, right)
 
@@ -196,7 +245,8 @@ class LLVMBackend(Backend):
         if self.builder is None:
             raise Exception("No builder is active")
         name = node.name
-        return self.builder.load(self._get_var_addr(name), name)
+        address = self._get_var_addr(name)
+        return self.builder.load(address, name)
 
     def IfExpr(self, node: IfExpr) -> PhiInstr:
         if self.builder is None:
@@ -208,8 +258,8 @@ class LLVMBackend(Backend):
             self.module.get_unique_name("ifexpr_then"))
         bb_else = self.builder.append_basic_block(
             self.module.get_unique_name("ifexpr_else"))
-        bb_end = self.builder.append_basic_block(
-            self.module.get_unique_name("ifexpr_end"))
+        bb_exit = self.builder.append_basic_block(
+            self.module.get_unique_name("ifexpr_exit"))
 
         self.builder.branch(bb_condition)
 
@@ -218,12 +268,12 @@ class LLVMBackend(Backend):
             self.builder.cbranch(condition, bb_then, bb_else)
 
         with self.builder.goto_block(bb_then):
-            self.builder.branch(bb_end)
+            self.builder.branch(bb_exit)
 
         with self.builder.goto_block(bb_else):
-            self.builder.branch(bb_end)
+            self.builder.branch(bb_exit)
 
-        self.builder.position_at_end(bb_end)
+        self.builder.position_at_end(bb_exit)
 
         llvmtype = self._get_llvm_type(node.inferredType.className)
         phi = self.builder.phi(typ=llvmtype)

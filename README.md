@@ -2,11 +2,11 @@ TO-DO
 
 - [x] VarDef
 - [x] AssignStmt
-- [ ] IfStmt
+- [x] IfStmt
 - [x] WhileStmt
 - [x] BinaryExpr
 - [x] Identifier
-- [ ] IfExpr
+- [x] IfExpr
 
 LLVM IR <br/>
 `python main.py --mode llvm tests/llvm/var_decl.py`
