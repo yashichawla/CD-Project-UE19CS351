@@ -1,11 +1,11 @@
 TO-DO
 
-- [x] VarDef -> done, tested
-- [ ] AssignStmt -> done, not completely tested
+- [x] VarDef
+- [x] AssignStmt
 - [ ] IfStmt
-- [x] WhileStmt ->added from video
-- [ ] BinaryExpr
-- [ ] Identifier ->done, tested with variables, not functions
+- [x] WhileStmt
+- [x] BinaryExpr
+- [x] Identifier
 - [ ] IfExpr
 
 LLVM IR <br/>

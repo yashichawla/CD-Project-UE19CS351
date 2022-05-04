@@ -161,13 +161,42 @@ class LLVMBackend(Backend):
         self.builder.position_at_end(bb_exit)
 
     def BinaryExpr(self, node: BinaryExpr) -> Optional[ICMPInstr]:
-        pass
+        if self.builder is None:
+            raise Exception("No builder is active")
+
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+
+        if node.operator == "+":
+            return self.builder.add(left, right)
+        elif node.operator == "-":
+            return self.builder.sub(left, right)
+        elif node.operator == "*":
+            return self.builder.mul(left, right)
+        elif node.operator == "%":
+            return self.builder.srem(left, right)
+        elif node.operator == "and":
+            return self.builder.and_(left, right)
+        elif node.operator == "or":
+            return self.builder.or_(left, right)
+        elif node.operator == "<":
+            return self.builder.icmp_signed("<", left, right)
+        elif node.operator == ">":
+            return self.builder.icmp_signed(">", left, right)
+        elif node.operator == ">=":
+            return self.builder.icmp_signed(">=", left, right)
+        elif node.operator == "<=":
+            return self.builder.icmp_signed("<=", left, right)
+        elif node.operator == "==":
+            return self.builder.icmp_signed("==", left, right)
+        elif node.operator == "!=":
+            return self.builder.icmp_signed("!=", left, right)
 
     def Identifier(self, node: Identifier) -> LoadInstr:
         if self.builder is None:
             raise Exception("No builder is active")
         name = node.name
-        return self.builder.load(self._get_var_addr(name))
+        return self.builder.load(self._get_var_addr(name),name)
 
     def IfExpr(self, node: IfExpr) -> PhiInstr:
         pass
