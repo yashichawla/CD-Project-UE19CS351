@@ -196,16 +196,47 @@ class LLVMBackend(Backend):
         if self.builder is None:
             raise Exception("No builder is active")
         name = node.name
-        return self.builder.load(self._get_var_addr(name),name)
+        return self.builder.load(self._get_var_addr(name), name)
 
     def IfExpr(self, node: IfExpr) -> PhiInstr:
-        pass
+        if self.builder is None:
+            raise Exception("No builder is active")
+
+        bb_condition = self.builder.append_basic_block(
+            self.module.get_unique_name("ifexpr_cond"))
+        bb_then = self.builder.append_basic_block(
+            self.module.get_unique_name("ifexpr_then"))
+        bb_else = self.builder.append_basic_block(
+            self.module.get_unique_name("ifexpr_else"))
+        bb_end = self.builder.append_basic_block(
+            self.module.get_unique_name("ifexpr_end"))
+
+        self.builder.branch(bb_condition)
+
+        with self.builder.goto_block(bb_condition):
+            condition = self.visit(node.condition)
+            self.builder.cbranch(condition, bb_then, bb_else)
+
+        with self.builder.goto_block(bb_then):
+            self.builder.branch(bb_end)
+
+        with self.builder.goto_block(bb_else):
+            self.builder.branch(bb_end)
+
+        self.builder.position_at_end(bb_end)
+
+        llvmtype = self._get_llvm_type(node.inferredType.className)
+        phi = self.builder.phi(typ=llvmtype)
+        phi.add_incoming(self.visit(node.thenExpr), bb_then)
+        phi.add_incoming(self.visit(node.elseExpr), bb_else)
+        return phi
 
     ##################################
     #      END OF IMPLEMENTATION     #
     ##################################
 
     # TOP LEVEL & DECLARATIONS
+
     def Program(self, node: Program):
         for d in node.declarations:
             self.visit(d)
